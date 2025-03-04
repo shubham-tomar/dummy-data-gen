@@ -1,0 +1,8 @@
+{
+    "id": "int",
+    "name": "string",
+    "clicks": "int",
+    "status": "status",
+    "created_at": "date",
+    "active": "bool"
+  }
