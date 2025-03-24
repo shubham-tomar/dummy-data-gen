@@ -10,10 +10,10 @@ use tokio::task;
 use tokio::time::sleep;
 use std::io::{self, Write};
 
-const TOPIC: &str = "test-topic";
+const TOPIC: &str = "dummy-src";
 const BROKER: &str = "localhost:9092";
 const THREADS: usize = 1;
-const MESSAGE_INTERVAL: Duration = Duration::from_micros(10000);
+const MESSAGE_INTERVAL: Duration = Duration::from_micros(100000);
 
 /// Load JSON schema from a file
 fn load_schema(file_path: &str) -> Value {

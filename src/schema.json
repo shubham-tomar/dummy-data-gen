@@ -1,5 +1,5 @@
 {
-    "id": "int",
+    "id": "string",
     "name": "string",
     "clicks": "int",
     "status": "status",
