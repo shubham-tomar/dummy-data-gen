@@ -9,11 +9,19 @@ use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 use tokio::task;
 use tokio::time::sleep;
 use std::io::{self, Write};
+use clap::Parser;
 
-const TOPIC: &str = "dummy-src";
 const BROKER: &str = "localhost:9092";
 const THREADS: usize = 1;
 const MESSAGE_INTERVAL: Duration = Duration::from_micros(100000);
+
+#[derive(Parser)]
+#[command(name = "dummy-data-gen")]
+#[command(about = "Kafka data generator for testing")]
+struct Args {
+    #[arg(short, long, default_value = "src_2")]
+    topic: String,
+}
 
 /// Load JSON schema from a file
 fn load_schema(file_path: &str) -> Value {
@@ -60,7 +68,7 @@ fn generate_log(schema: &Value) -> String {
     serde_json::to_string(&log).unwrap()
 }
 
-async fn produce_logs(producer: Arc<FutureProducer>, counter: Arc<AtomicUsize>, schema: Arc<Value>) {
+async fn produce_logs(producer: Arc<FutureProducer>, counter: Arc<AtomicUsize>, schema: Arc<Value>, topic: String) {
     let mut interval = Instant::now();
 
     loop {
@@ -68,8 +76,9 @@ async fn produce_logs(producer: Arc<FutureProducer>, counter: Arc<AtomicUsize>, 
         let id_str = "log_key".to_string(); // Generic key
 
         let producer_clone = Arc::clone(&producer);
+        let topic_clone = topic.clone();
         tokio::spawn(async move {
-            let record = FutureRecord::to(TOPIC)
+            let record = FutureRecord::to(&topic_clone)
                 .payload(message.as_str())
                 .key(id_str.as_str());
 
@@ -93,6 +102,7 @@ async fn produce_logs(producer: Arc<FutureProducer>, counter: Arc<AtomicUsize>, 
 
 #[tokio::main]
 async fn main() {
+    let args = Args::parse();
     let producer: FutureProducer = ClientConfig::new()
         .set("bootstrap.servers", BROKER)
         .set("message.timeout.ms", "5000")
@@ -108,7 +118,8 @@ async fn main() {
         let producer_clone = Arc::clone(&producer);
         let counter_clone = Arc::clone(&counter);
         let schema_clone = Arc::clone(&schema);
-        tasks.push(task::spawn(produce_logs(producer_clone, counter_clone, schema_clone)));
+        let topic_clone = args.topic.clone();
+        tasks.push(task::spawn(produce_logs(producer_clone, counter_clone, schema_clone, topic_clone)));
     }
 
     futures::future::join_all(tasks).await;
